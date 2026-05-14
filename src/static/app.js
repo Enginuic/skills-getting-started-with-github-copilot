@@ -15,19 +15,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
-        const activityCard = document.createElement("div");
-        activityCard.className = "activity-card";
+        const card = document.createElement("div");
+        card.className = "activity-card";
 
-        const spotsLeft = details.max_participants - details.participants.length;
+        const title = document.createElement("h4");
+        title.textContent = name;
+        card.appendChild(title);
 
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-        `;
+        const description = document.createElement("p");
+        description.textContent = details.description;
+        card.appendChild(description);
 
-        activitiesList.appendChild(activityCard);
+        const schedule = document.createElement("p");
+        schedule.textContent = `Schedule: ${details.schedule}`;
+        card.appendChild(schedule);
+
+        const participants = document.createElement("div");
+        participants.innerHTML = `<strong>Participants:</strong>`;
+        const participantsList = document.createElement("ul");
+        participantsList.className = "participants-list";
+
+        details.participants.forEach((participant) => {
+          const listItem = createParticipantItem(participant, name);
+          participantsList.appendChild(listItem);
+        });
+
+        participants.appendChild(participantsList);
+        card.appendChild(participants);
+
+        activitiesList.appendChild(card);
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -84,3 +100,42 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize app
   fetchActivities();
 });
+
+// Function to create a participant item
+const createParticipantItem = (participant, activityName) => {
+  const listItem = document.createElement("li");
+  listItem.style.listStyleType = "none"; // Hide bullet points
+
+  const participantName = document.createElement("span");
+  participantName.textContent = participant;
+  listItem.appendChild(participantName);
+
+  const deleteIcon = document.createElement("button");
+  deleteIcon.textContent = "❌";
+  deleteIcon.style.marginLeft = "10px";
+  deleteIcon.style.border = "none";
+  deleteIcon.style.background = "none";
+  deleteIcon.style.cursor = "pointer";
+  deleteIcon.title = "Remove participant";
+
+  deleteIcon.addEventListener("click", async () => {
+    try {
+      const response = await fetch(`/activities/${activityName}/unregister?email=${participant}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert(`${participant} has been removed from ${activityName}`);
+        listItem.remove();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.detail}`);
+      }
+    } catch (error) {
+      alert("Failed to unregister participant. Please try again later.");
+    }
+  });
+
+  listItem.appendChild(deleteIcon);
+  return listItem;
+};
